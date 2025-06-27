@@ -18,7 +18,7 @@ public class BookController {
 
     @GetMapping
     public List<Book> getAllBooks() {
-        return bookRepository.findAll(); 
+        return bookRepository.findAll();
     }
 
     @GetMapping("/{isbn}")
@@ -28,23 +28,26 @@ public class BookController {
 
     @PostMapping
     public ResponseEntity<?> addBook(@RequestBody Book book) {
-        return bookRepository.existsById(book.getIsbn())
-                ? ResponseEntity.status(HttpStatus.CONFLICT).body("Book already exists")
-                : ResponseEntity.status(HttpStatus.CREATED).body(bookRepository.save(book));
+        if (bookRepository.existsById(book.getIsbn())) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("Book already exists");
+        }
+        return ResponseEntity.status(HttpStatus.CREATED).body(bookRepository.save(book));
     }
 
     @PutMapping("/{isbn}")
-    public ResponseEntity<Book> updateBook(@PathVariable String isbn, @RequestBody Book updatedBook) {
-        Book existing = bookRepository.findById(isbn)
-                .orElseThrow(() -> new RuntimeException("Book not found"));
+    public ResponseEntity<?> updateBook(@PathVariable String isbn, @RequestBody Book updatedBook) {
+        Optional<Book> optional = bookRepository.findById(isbn);
+        if (optional.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Book not found");
+        }
 
+        Book existing = optional.get();
         existing.setTitle(updatedBook.getTitle());
         existing.setAuthor(updatedBook.getAuthor());
         existing.setPublicationYear(updatedBook.getPublicationYear());
 
         return ResponseEntity.ok(bookRepository.save(existing));
     }
-
 
     @DeleteMapping("/{isbn}")
     public ResponseEntity<String> deleteBook(@PathVariable String isbn) {
